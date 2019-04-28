@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>布料效果</title>
+	<style type="text/css">
+		html,body{
+			margin: 0;
+			padding: 0;
+		}
+		canvas{
+			width:100%;
+			height: 100%;
+			box-sizing: border-box;
+		}
+	</style>
+</head>
+<body>
+<canvas >你的浏览器不支持canvas,无法查看效果，啧啧</canvas>
+<script type="text/javascript" src="./cloth.js"></script>
+<script type="text/javascript">
+	/**
+	*obj={
+	*	canvas = canvas element,
+	*	ctx = ctx //ctx or canvas,not nessary support both 
+	*	numrow = how many cell-rows(cell number in y-axis),
+	*	numcol = how many cell-cols(cell number in x-axis),
+	*	space  = the size of one cell,
+	*	start  ={
+	*			x:x,
+	*			y:y,
+	*			}//start
+	*	gravity = {x:0,y:1200}重力加速度,
+	*   tear_distance = 撕裂距离,
+	*	mouse_influence = 光标影响范围,
+	*	mouse_cut = 剪切影响范围,
+	*	render_times = 每次更新前物理作用渲染次数
+	*}//obj
+	*   cell 指每个纵横线间形成的小格子
+	*/
+	let canv = document.getElementsByTagName("canvas")[0];
+	let cl = new Cloth({
+		canvas:canv
+	});
+	cl.init();
+	cl.bindEvent();
+	function anim(){
+		cl.update();
+		cl.draw();
+		requestAnimationFrame(anim);
+	}
+		requestAnimationFrame(anim);
+
+</script>
+</body>
+</html>
