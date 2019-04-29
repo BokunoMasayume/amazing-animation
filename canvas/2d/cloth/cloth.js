@@ -27,19 +27,19 @@
 	*   cell 指每个纵横线间形成的小格子
 	*/
 	window.Cloth = function(obj){
-		this.canvas = obj.canvas;
-		this.ctx = obj.ctx || obj.canvas.getContext('2d');
-		this.numrow = obj.numrow || 60 ;
-		this.numcol = obj.numcol || 30 ;
-		this.space = obj.space || 10;
-		this.gravity = {x:0,y:1200};
+		let canvas = this.canvas = obj.canvas;
+		let ctx = this.ctx = obj.ctx || obj.canvas.getContext('2d');
+		let numrow = this.numrow = obj.numrow || 30 ;
+		let numcol = this.numcol = obj.numcol || 60 ;
+		let space = this.space = obj.space || 7;
+		let gravity = this.gravity = {x:0,y:1200};
 		// this.gravity = obj.gravity || {x:0,y:1200};
-		this.tear_distance = obj.tear_distance || 50;
-		this.mouse_influence = obj.mouse_influence || 10;
-		this.mouse_cut = obj.mouse_cut || 5;
-		this.render_times = obj.render_times || 3;
+		let tear_distance = this.tear_distance = obj.tear_distance || 50;
+		let mouse_influence = this.mouse_influence = obj.mouse_influence || 10;
+		let mouse_cut = this.mouse_cut = obj.mouse_cut || 5;
+		let render_times = this.render_times = obj.render_times || 3;
 		this.points = [];
-		this.mouse = {
+		let mouse = {
 			x:0,
 			y:0,
 			perv_x:0,
@@ -48,6 +48,56 @@
 			button:1
 		};
 		obj.start?this.start=obj.start: this.start={x:0,y:0};
+
+
+
+		// let canvas = obj.canvas;
+		// let ctx = this.ctx;
+		// let numrow = obj.numrow || 30 ;
+		// let numcol = obj.numcol || 60 ;
+		// let space = obj.space || 7;
+		// let gravity = {x:0,y:1200};
+		// // this.gravity = obj.gravity || {x:0,y:1200};
+		// let tear_distance = obj.tear_distance || 50;
+		// let mouse_influence = obj.mouse_influence || 10;
+		// let mouse_cut = obj.mouse_cut || 5;
+		// let render_times = obj.render_times || 3;
+		// let points = [];
+		// let mouse = this.mouse;
+		// let start;
+		// obj.start?start=obj.start: start={x:0,y:0};
+			this.bindEvent = function(canv){
+				let canva = canvas || canv;
+				// let that = this;
+				canva.addEventListener("mousedown",function(e){
+					mouse.button = e.which;
+			        mouse.perv_x = mouse.x;
+			        mouse.perv_y = mouse.y;
+			        var rect = canvas.getBoundingClientRect();//返回元素大小及其相对于视口的位置
+			        mouse.x = e.clientX - rect.left;
+			        mouse.y = e.clientY - rect.top;
+			        mouse.down = true;
+			        e.preventDefault();
+				});
+
+				canva.addEventListener("mouseup",function(e){
+					mouse.down = false;
+		       		e.preventDefault();
+				});
+				canva.addEventListener("mousemove",function(e){
+					mouse.button = e.which;
+			        mouse.perv_x = mouse.x;
+			        mouse.perv_y = mouse.y;
+			        var rect = canvas.getBoundingClientRect();//返回元素大小及其相对于视口的位置
+			        mouse.x = e.clientX - rect.left;
+			        mouse.y = e.clientY - rect.top;
+			        e.preventDefault();
+				});
+				canva.addEventListener("contextmenu",function(e){
+		       		e.preventDefault();
+
+				});
+			};
 
 		/*
 		*Class Point(position-x,position-y)
@@ -61,6 +111,7 @@
 			this.pin_y = null;
 			//acceleration 加速度
 			let gra = gravity;
+			// console.log(gra);
 			this.acce_x = gra.x;
 			this.acce_y = gra.y;
 
@@ -75,6 +126,7 @@
 
 		this.Point.prototype.renderGravity = function(delta){
 			if(mouse.down){
+				console.log('asasa');
 				let dist_x = this.x - mouse.x;
 				let dist_y = this.y - mouse.y;
 				let dist = Math.sqrt(dist_x*dist_x + dist_y*dist_y);
@@ -92,9 +144,9 @@
 
 
 			delta *= delta;
-			let next_x = this.x + (this.x - this.perv_x) + (this.acce_x * delta)*0.5;
-			let next_y = this.y + (this.y - this.perv_y) + (this.acce_y * delta)*0.5;
-
+			let next_x = this.x + (this.x - this.perv_x) + this.acce_x * delta *0.5;
+			let next_y = this.y + (this.y - this.perv_y) + this.acce_y * delta *0.5;
+			// console.log("next_x", this.x - this.perv_x)
 			this.perv_x = this.x;
 			this.perv_y = this.y;
 
@@ -133,21 +185,22 @@
 			this.pb = pb;
 		}
 		this.Constraint.prototype.render = function(){
-			let dist_x = pa.x - pb.x;
-			let dist_y = pa.y - pb.y;
+			let dist_x = this.pb.x - this.pa.x;
+			let dist_y = this.pb.y - this.pa.y;
 			let dist = Math.sqrt(dist_x*dist_x + dist_y*dist_y);
 			let fibreForce =  (space - dist)/dist;
 			if(dist > tear_distance){
 				this.pb.removeConstraint(this);
 				return;
 			}
-
+			// console.log("dist_x",dist_x);
 			let dx = dist_x * fibreForce * 0.5;
 			let dy = dist_y * fibreForce * 0.5;
+			/*纤维使间距尽量维持在space大小*/
 			this.pa.x -= dx;
 			this.pa.y -= dy;
-			this.pb.x -= dx;
-			this.pb.y -= dy;
+			this.pb.x += dx;
+			this.pb.y += dy;
 		};
 
 		this.Constraint.prototype.draw = function(){
@@ -176,17 +229,18 @@
 			this.points[y] = [];
 			for(let x=0;x <= this.numcol ;x++ ){
 				
-				let point = new this.Point(x*this.space , y*this.space);
-				this.points[y].push(point);
+				let point = new this.Point(this.start.x+x*this.space , this.start.y+y*this.space);
+				this.points[y][x] = point;
 
-				x!=0 && point.constraints.push(this.points[y][x-1],point);
-				y!=0 && point.constraints.push(this.points[y-1][x], point);
-				y==0 && point.pin(x*this.space , y*this.space);
+				x!=0 && point.constraints.push(new this.Constraint(this.points[y][x-1],point));
+				y!=0 && point.constraints.push(new this.Constraint(this.points[y-1][x], point));
+				y==0 && point.pin(point.x , point.y);
 			}
 		}
 	};
 	window.Cloth.prototype.update = function(){
 		for(let i=0;i<this.render_times;i++){
+			console.log(i);
 			for(let y=0;y<=this.numrow;y++){
 				for(let x=0 ; x<=this.numcol;x++){
 					this.points[y][x].renderConstraints();
@@ -196,13 +250,13 @@
 
 		for(let y=0 ; y<=this.numrow;y++){
 			for(let x = 0 ; x<=this.numcol ; x++){
-				this.points[y][x].renderGravity(.016);
+				this.points[y][x].renderGravity(0.016);
 			}
 		}
 	};//Cloth.update
 
 	window.Cloth.prototype.draw = function(){
-    	this.ctx.clearRect(0, 0, canvas.width, canvas.height);
+    	this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
 		this.ctx.beginPath();
 		for(let y=0 ; y<=this.numrow;y++){
@@ -213,36 +267,36 @@
 		this.ctx.stroke();
 	};//Cloth.draw
 
-	window.Cloth.prototype.bindEvent = function(canv){
-		this.canvas = canv || this.canvas;
-		let that = this;
-		this.canvas.addEventListener("mousedown",function(e){
-			that.mouse.button = e.which;
-	        that.mouse.perv_x = that.mouse.x;
-	        that.mouse.perv_y = that.mouse.y;
-	        var rect = that.canvas.getBoundingClientRect();//返回元素大小及其相对于视口的位置
-	        that.mouse.x = e.clientX - rect.left;
-	        that.mouse.y = e.clientY - rect.top;
-	        that.mouse.down = true;
-	        e.preventDefault();
-		});
+	// window.Cloth.prototype.bindEvent = function(canv){
+	// 	this.canvas = canv || this.canvas;
+	// 	let that = this;
+	// 	this.canvas.addEventListener("mousedown",function(e){
+	// 		that.mouse.button = e.which;
+	//         that.mouse.perv_x = that.mouse.x;
+	//         that.mouse.perv_y = that.mouse.y;
+	//         var rect = that.canvas.getBoundingClientRect();//返回元素大小及其相对于视口的位置
+	//         that.mouse.x = e.clientX - rect.left;
+	//         that.mouse.y = e.clientY - rect.top;
+	//         that.mouse.down = true;
+	//         e.preventDefault();
+	// 	});
 
-		this.canvas.addEventListener("mouseup",function(e){
-			that.mouse.down = false;
-       		e.preventDefault();
-		});
-		this.canvas.addEventListener("mousemove",function(e){
-			that.mouse.button = e.which;
-	        that.mouse.perv_x = that.mouse.x;
-	        that.mouse.perv_y = that.mouse.y;
-	        var rect = that.canvas.getBoundingClientRect();//返回元素大小及其相对于视口的位置
-	        that.mouse.x = e.clientX - rect.left;
-	        that.mouse.y = e.clientY - rect.top;
-	        e.preventDefault();
-		});
-		this.canvas.addEventListener("contextmenu",function(e){
-       		e.preventDefault();
+	// 	this.canvas.addEventListener("mouseup",function(e){
+	// 		that.mouse.down = false;
+ //       		e.preventDefault();
+	// 	});
+	// 	this.canvas.addEventListener("mousemove",function(e){
+	// 		that.mouse.button = e.which;
+	//         that.mouse.perv_x = that.mouse.x;
+	//         that.mouse.perv_y = that.mouse.y;
+	//         var rect = that.canvas.getBoundingClientRect();//返回元素大小及其相对于视口的位置
+	//         that.mouse.x = e.clientX - rect.left;
+	//         that.mouse.y = e.clientY - rect.top;
+	//         e.preventDefault();
+	// 	});
+	// 	this.canvas.addEventListener("contextmenu",function(e){
+ //       		e.preventDefault();
 
-		});
-	};
+	// 	});
+	// };
 }());
