@@ -34,25 +34,32 @@
 	*   tear_distance = 撕裂距离,
 	*	mouse_influence = 光标影响范围,
 	*	mouse_cut = 剪切影响范围,
-	*	render_times = 每次更新前物理作用渲染次数
+	*	render_times = 每次更新前物理作用渲染次数,
+	*	img = img src ,
+	*	doGrain = false//是否渲染纹理,
+	*	renderType=clarity 1|pattern 0//你试试
 	*}//obj
 	*   cell 指每个纵横线间形成的小格子
 	*/
+	let myimg = new Image();
+	let cl;
+	myimg.onload = function(){
 	let canv = document.getElementsByTagName("canvas")[0];
 	canv.width = 800;
     canv.height = 500;
-	let cl = new Cloth({
+	cl = new Cloth({
 		canvas:canv,
 		gravity:{x:0,y:1200},
 		start:{x:40,y:40},
-		numcol:40,
-		numrow:20,
-		render_times:3,
+		numcol:50,
+		numrow:40,
+		render_times:5,
 		tear_distance:180,
-		space:20
+		space:3
 	});
 	cl.init();
 	cl.bindEvent();
+	cl.renderGrain(myimg);
 	function anim(){
 		cl.update();
 		cl.draw();
@@ -63,6 +70,9 @@
 		// anim();
 		// anim();
 		// anim();
+	}
+	myimg.src = "./t.jpg";
+
 </script>
 </body>
 </html>

@@ -6,7 +6,7 @@
 */
 
 ;(function(){
-// 	"use strict"
+
 	/**
 	*obj={
 	*	canvas = canvas element,
@@ -22,17 +22,24 @@
 	*   tear_distance = 撕裂距离,
 	*	mouse_influence = 光标影响范围,
 	*	mouse_cut = 剪切影响范围,
-	*	render_times = 每次更新前物理作用渲染次数
+	*	render_times = 每次更新前物理作用渲染次数,
+	*	img = img src ,
+	*	doGrain = false//是否渲染纹理,
+	*	renderType=clarity 1|pattern 0//你试试
 	*}//obj
 	*   cell 指每个纵横线间形成的小格子
 	*/
 	window.Cloth = function(obj){
+		this.img = obj.img;
+		this.renderType = obj.renderType || 0;
+		let doGrain = this.doGrain = obj.doGrain||false;
 		let canvas = this.canvas = obj.canvas;
 		let ctx = this.ctx = obj.ctx || obj.canvas.getContext('2d');
 		let numrow = this.numrow = obj.numrow || 30 ;
 		let numcol = this.numcol = obj.numcol || 60 ;
 		let space = this.space = obj.space || 7;
-		let gravity = this.gravity = {x:0,y:1200};
+		let gravity = this.gravity = obj.gravity||{x:0,y:1200};
+		// let gravity = this.gravity = {x:0,y:1200};
 		// this.gravity = obj.gravity || {x:0,y:1200};
 		let tear_distance = this.tear_distance = obj.tear_distance || 50;
 		let mouse_influence = this.mouse_influence = obj.mouse_influence || 10;
@@ -116,6 +123,7 @@
 			this.acce_y = gra.y;
 
 			this.constraints = [];
+			//this.grain
 		};
 
 		this.Point.prototype.renderConstraints = function(){
@@ -126,7 +134,7 @@
 
 		this.Point.prototype.renderGravity = function(delta){
 			if(mouse.down){
-				console.log('asasa');
+				// console.log('asasa');
 				let dist_x = this.x - mouse.x;
 				let dist_y = this.y - mouse.y;
 				let dist = Math.sqrt(dist_x*dist_x + dist_y*dist_y);
@@ -163,9 +171,9 @@
 		this.Point.prototype.draw = function(){
 			for(let i=0;i<this.constraints.length;i++){
 				this.constraints[i].draw();
-
 			}
-		}
+		};
+
 		this.Point.prototype.pin = function(x,y){
 			this.pin_x = x;
 			this.pin_y = y;
@@ -240,7 +248,7 @@
 	};
 	window.Cloth.prototype.update = function(){
 		for(let i=0;i<this.render_times;i++){
-			console.log(i);
+			// console.log(i);
 			for(let y=0;y<=this.numrow;y++){
 				for(let x=0 ; x<=this.numcol;x++){
 					this.points[y][x].renderConstraints();
@@ -257,15 +265,60 @@
 
 	window.Cloth.prototype.draw = function(){
     	this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    	if(!this.doGrain){
+			this.ctx.beginPath();
+			for(let y=0 ; y<=this.numrow;y++){
+				for(let x = 0 ; x<=this.numcol ; x++){
+					this.points[y][x].draw();
+				}
+			}
+			this.ctx.stroke();
+		}
+		if(this.doGrain){
+			let imgWidth = this.img.width/this.numcol;
+			let imgHeight = this.img.height/this.numrow;
+			for(let y=1;y<=this.numrow;y++){
+				for(let x=1;x<=this.numcol;x++){
+					// this.points[y][x].drawGrain();
+					let p1 = this.points[y-1][x-1];
+					let p2 = this.points[y-1][x];
+					let p3 = this.points[y][x-1];
+					let p4 = this.points[y][x];
+						// console.log(p4.constraints[0].pa.constraints);
 
-		this.ctx.beginPath();
-		for(let y=0 ; y<=this.numrow;y++){
-			for(let x = 0 ; x<=this.numcol ; x++){
-				this.points[y][x].draw();
+					if(p4.constraints.length<2)continue;
+					if(!(p4.constraints[0].pa.constraints.length && p4.constraints[1].pa.constraints.length))continue;
+					if(p4.constraints[0].pa.constraints[p4.constraints[0].pa.constraints.length-1].pa == p4.constraints[1].pa.constraints[0].pa){
+						this.ctx.save();
+						this.ctx.transform(p2.x-p1.x , p2.y-p1.y ,p3.x-p1.x, p3.y-p1.y ,p1.x,p1.y);
+						// this.ctx.putImageData(p1.grain,p1.x,p1.y);
+						if(this.renderType ==1)this.ctx.drawImage(this.img , p1.x,p1.y,imgWidth,imgHeight,0,0,1,1 );
+						if(this.renderType ==0)this.ctx.drawImage(this.img , (x-1)*imgWidth,(y-1)*imgHeight,imgWidth,imgHeight,0,0,1,1 );
+						this.ctx.restore();
+					}
+				}
 			}
 		}
-		this.ctx.stroke();
 	};//Cloth.draw
+
+	window.Cloth.prototype.renderGrain = function(img){
+		let image = this.img = img || this.img;
+		
+		// this.img.width = this.numcol*this.space;
+		// this.img.height = this.numrow*this.space;
+		this.doGrain = true;
+		
+		// this.ctx.save();
+		// this.ctx.drawImage(image , 0,0,image.width,image.height,0,0,this.numcol*this.space , this.numrow * this.space);
+		// // this.ctx.getImageData(0,0,this.numcol*this.space , this.numrow * this.space);
+		// for(let y=0;y<this.numrow;y++){
+		// 	for(let x=0;x<this.numcol;x++){
+		// 		this.points[y][x].grain = this.ctx.getImageData(x*this.space,y*this.space , this.space,this.space);
+
+		// 	}
+		// }
+		// this.ctx.restore();
+	};
 
 	// window.Cloth.prototype.bindEvent = function(canv){
 	// 	this.canvas = canv || this.canvas;
