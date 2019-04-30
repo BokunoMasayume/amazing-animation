@@ -56,7 +56,7 @@
 		};
 		obj.start?this.start=obj.start: this.start={x:0,y:0};
 
-
+		this.pand = obj.pand || {x:1,y:1};
 
 		// let canvas = obj.canvas;
 		// let ctx = this.ctx;
@@ -150,7 +150,8 @@
 				}
 			}
 
-
+			this.acce_x = gravity.x;
+			this.acce_y = gravity.y;
 			delta *= delta;
 			let next_x = this.x + (this.x - this.perv_x) + this.acce_x * delta *0.5;
 			let next_y = this.y + (this.y - this.perv_y) + this.acce_y * delta *0.5;
@@ -175,8 +176,8 @@
 		};
 
 		this.Point.prototype.pin = function(x,y){
-			this.pin_x = x;
-			this.pin_y = y;
+			this.pin_x = x || this.x;
+			this.pin_y = y || this.y;
 		};
 
 		this.Point.prototype.removeConstraint = function(constraint){
@@ -202,8 +203,8 @@
 				return;
 			}
 			// console.log("dist_x",dist_x);
-			let dx = dist_x * fibreForce * 0.5;
-			let dy = dist_y * fibreForce * 0.5;
+			let dx = dist_x * fibreForce * 0.6;//useed to be 0.5 , simulate bounce
+			let dy = dist_y * fibreForce * 0.6;
 			/*纤维使间距尽量维持在space大小*/
 			this.pa.x -= dx;
 			this.pa.y -= dy;
@@ -258,9 +259,10 @@
 
 		for(let y=0 ; y<=this.numrow;y++){
 			for(let x = 0 ; x<=this.numcol ; x++){
-				this.points[y][x].renderGravity(0.016);
+				this.points[y][x].renderGravity(0.02);//0.016
 			}
 		}
+		
 	};//Cloth.update
 
 	window.Cloth.prototype.draw = function(){
@@ -290,15 +292,28 @@
 					if(!(p4.constraints[0].pa.constraints.length && p4.constraints[1].pa.constraints.length))continue;
 					if(p4.constraints[0].pa.constraints[p4.constraints[0].pa.constraints.length-1].pa == p4.constraints[1].pa.constraints[0].pa){
 						this.ctx.save();
-						this.ctx.transform(p2.x-p1.x , p2.y-p1.y ,p3.x-p1.x, p3.y-p1.y ,p1.x,p1.y);
+						this.ctx.setTransform(p2.x-p1.x , p2.y-p1.y ,p3.x-p1.x, p3.y-p1.y ,p1.x,p1.y);
 						// this.ctx.putImageData(p1.grain,p1.x,p1.y);
-						if(this.renderType ==1)this.ctx.drawImage(this.img , p1.x,p1.y,imgWidth,imgHeight,0,0,1,1 );
-						if(this.renderType ==0)this.ctx.drawImage(this.img , (x-1)*imgWidth,(y-1)*imgHeight,imgWidth,imgHeight,0,0,1,1 );
+						if(this.renderType ==1){
+
+							this.ctx.drawImage(this.img , p1.x,p1.y,this.space,this.space,0,0,this.pand.x,this.pand.y  );
+							// this.ctx.setTransform(p2.x-p3.x , p2.y-p3.y ,p4.x-p3.x , p4.y-p3.y,p3.x,p3.y);
+							// this.ctx.drawImage(this.transImg[x%2],this.numrow*this.space - p3.y , p3.x+p3.y,this.space,this.space,0,0,1,1);
+
+						}
+						if(this.renderType ==0){
+
+							// this.ctx.drawImage(this.transImg[x%2?1:0] , (x-1)*imgWidth,(y-1)*imgHeight,imgWidth,imgHeight,0,0,1.07,1.07 );
+							this.ctx.drawImage(this.halfImg[(x+y)%2?0:1] , (x-1)*this.space,(y-1)*this.space,this.space,this.space,0,0,this.pand.x,this.pand.y );
+							this.ctx.setTransform(p2.x-p3.x , p2.y-p3.y ,p4.x-p3.x , p4.y-p3.y,p3.x,p3.y);
+							this.ctx.drawImage(this.transImg[(x+y)%2],this.numrow*this.space - y*this.space , (x-1)*this.space+y*this.space,this.space,this.space,0,0,this.pand.x,this.pand.y );
+						}
 						this.ctx.restore();
 					}
 				}
 			}
 		}
+
 	};//Cloth.draw
 
 	window.Cloth.prototype.renderGrain = function(img){
@@ -307,7 +322,53 @@
 		// this.img.width = this.numcol*this.space;
 		// this.img.height = this.numrow*this.space;
 		this.doGrain = true;
+		this.transImg = [];
+		this.transImg[0] = document.createElement("canvas");
+		this.transImg[0].width = this.space * this.numrow;
+		this.transImg[0].height = this.space * this.numcol + this.space*this.numrow;
+		let imgctx = this.transImg[0].getContext("2d");
+		imgctx.transform(0,1,-1,1,this.space * this.numrow,0);
+		/*
+		*inverse transform(1,-1,1,0,-1*this.space * this.numrow,this.space * this.numrow)
+		*/
+		imgctx.drawImage(image , 0,0,image.width ,image.height , 0,0,this.space * this.numcol,this.space * this.numrow);
 		
+		this.transImg[1] = document.createElement("canvas");
+		this.transImg[1].width = this.space * this.numrow;
+		this.transImg[1].height = this.space * this.numcol + this.space*this.numrow;
+		let imgctx1 = this.transImg[1].getContext("2d");
+		imgctx1.transform(0,1,-1,1,this.space * this.numrow,0);
+		imgctx1.drawImage(image , 0,0,image.width ,image.height , 0,0,this.space * this.numcol,this.space * this.numrow);
+		
+		imgctx.resetTransform();
+		imgctx1.resetTransform();
+		for(let i=0;i<this.numcol+this.numrow;i++){
+			if(!(i%2)){//偶
+				imgctx.clearRect(0,i*this.space,this.space*this.numrow,this.space);
+
+				// imgctx.clearRect(i*this.space,0,this.space,this.space*this.numrow);
+			}else{
+				imgctx1.clearRect(0,i*this.space,this.space*this.numrow,this.space);
+
+				// imgctx1.clearRect(i*this.space,0,this.space,this.space*this.numrow);
+
+			}
+		}
+
+		this.halfImg = [];
+		this.halfImg[0] = document.createElement("canvas");
+		this.halfImg[0].width = this.space * this.numcol ;
+		this.halfImg[0].height = this.space*this.numrow;
+		imgctx = this.halfImg[0].getContext("2d");
+		imgctx.transform(1,-1,1,0,-1*this.space * this.numrow,this.space * this.numrow);
+		imgctx.drawImage(this.transImg[0],0,0);
+
+		this.halfImg[1] = document.createElement("canvas");
+		this.halfImg[1].width = this.space * this.numcol ;
+		this.halfImg[1].height = this.space*this.numrow;
+		imgctx = this.halfImg[1].getContext("2d");
+		imgctx.transform(1,-1,1,0,-1*this.space * this.numrow,this.space * this.numrow);
+		imgctx.drawImage(this.transImg[1],0,0);
 		// this.ctx.save();
 		// this.ctx.drawImage(image , 0,0,image.width,image.height,0,0,this.numcol*this.space , this.numrow * this.space);
 		// // this.ctx.getImageData(0,0,this.numcol*this.space , this.numrow * this.space);

@@ -46,22 +46,33 @@
 	myimg.onload = function(){
 	let canv = document.getElementsByTagName("canvas")[0];
 	canv.width = 800;
-    canv.height = 500;
+    canv.height = 600;
 	cl = new Cloth({
 		canvas:canv,
-		gravity:{x:0,y:1200},
-		start:{x:40,y:40},
-		numcol:50,
-		numrow:40,
-		render_times:5,
+		gravity:{x:20,y:300},
+		start:{x:300,y:40},
+		numcol:30,
+		numrow:30,
+		render_times:2,
 		tear_distance:180,
-		space:3
+		space:5,
+		renderType:0,
+		pand:{
+			x:1.02,
+			y:1.02
+		}
 	});
 	cl.init();
 	cl.bindEvent();
 	cl.renderGrain(myimg);
+	// cl.points[cl.numrow][cl.numcol].pin();
+	// cl.points[cl.numrow][0].pin();
+	// cl.points[cl.numrow][10].pin();
+	// cl.points[cl.numrow][20].pin();
+	let delaycount=-1;
 	function anim(){
 		cl.update();
+		if((delaycount = ++delaycount%9) ==0)
 		cl.draw();
 		requestAnimationFrame(anim);
 	}
@@ -72,7 +83,9 @@
 		// anim();
 	}
 	myimg.src = "./t.jpg";
-
+	setInterval(function(){
+		cl.gravity.x -= (Math.random()-0.5)*10;
+	} , 1000);
 </script>
 </body>
 </html>
