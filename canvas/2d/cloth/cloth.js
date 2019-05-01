@@ -296,10 +296,13 @@
 						// this.ctx.putImageData(p1.grain,p1.x,p1.y);
 						if(this.renderType ==1){
 
-							this.ctx.drawImage(this.img , p1.x,p1.y,this.space,this.space,0,0,this.pand.x,this.pand.y  );
+							// this.ctx.drawImage(this.img , p1.x,p1.y,this.space,this.space,0,0,this.pand.x,this.pand.y  );
 							// this.ctx.setTransform(p2.x-p3.x , p2.y-p3.y ,p4.x-p3.x , p4.y-p3.y,p3.x,p3.y);
 							// this.ctx.drawImage(this.transImg[x%2],this.numrow*this.space - p3.y , p3.x+p3.y,this.space,this.space,0,0,1,1);
-
+							this.ctx.drawImage(this.img , p1.x,p1.y,this.space,this.space,0,0,this.pand.x,this.pand.y );
+							this.ctx.setTransform(p2.x-p3.x , p2.y-p3.y ,p4.x-p3.x , p4.y-p3.y,p3.x,p3.y);
+							this.ctx.drawImage(this.img,this.numrow*this.space - p3.y*this.space , p3.x*this.space+p3.y*this.space,this.space,this.space,0,0,this.pand.x,this.pand.y );
+						
 						}
 						if(this.renderType ==0){
 

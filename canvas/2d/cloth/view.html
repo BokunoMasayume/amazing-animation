@@ -50,17 +50,18 @@
 	cl = new Cloth({
 		canvas:canv,
 		gravity:{x:20,y:300},
-		start:{x:300,y:40},
+		start:{x:30,y:40},
 		numcol:30,
 		numrow:30,
 		render_times:2,
 		tear_distance:180,
-		space:5,
+		space:10,
 		renderType:0,
 		pand:{
-			x:1.02,
-			y:1.02
-		}
+			x:1.002,
+			y:1.002
+		},
+		mouse_influence:50
 	});
 	cl.init();
 	cl.bindEvent();
