@@ -26,8 +26,13 @@ var clients = [];
 var clientsImage = [];
 var clientsVoice = [];
 
+// var reg = /(.+)(%[A-Za-z0-9]{2})(.+)/;
+
 server.on('request', function(req , res) {
   console.log("server on request");
+  req.url = url.parse(req.url).pathname;
+  req.url = decodeURI(req.url);
+  console.log("url",req.url);
   if(req.url == '/'){
   // fs.readFile('./nodeserver.html' , function(err , data) {
   fs.readFile('./solar.html' , function(err , data) {

@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>WebGL进一步处理图像</title>
+	<style type="text/css">
+		div{
+			padding:0 20%;
+		}
+	</style>
+</head>
+<body>
+<canvas></canvas>
+<div>
+	如果为gl绑定了一个frame buffer，那么渲染后的图像不会显示在canvas上，而是传入绑定的framebuffer，不会显示。<br/>
+	为了使用framebuffer中的渲染结果，可以为这个frame buffer绑定一个texture，则framebuffer每次收到数据都会传入texture中，使用这个texture，就可以使用framebuffer中的渲染结果<br/>
+	似乎最开始传入HTML image的图像在纹理坐标中就是倒着的。在framebuffer中当乒乓球时就保持倒着，在最后画在画布时再倒转一下 <br/>
+	猜测一下，texture按在数组中坐标顺序定位像素位置，原本texture在第一个位置该存放图片左下角位置的像素，但html image元素却在那个位置存放的左上角像素，造成内存啥也没变，但图片倒转
+</div>
+<script id="vert" type="vertex-shader">
+attribute vec2 a_position;
+varying vec2 v_texCoord;
+uniform vec2 u_resolution;
+void main(){
+	vec2 normalize = a_position / u_resolution;
+	v_texCoord = normalize*vec2(1,-1)+vec2(0,-1);
+
+	vec2 clipSpace = normalize * vec2(2,-2) - vec2(1,-1);
+	gl_Position = vec4((clipSpace ),0,1);
+}
+</script>
+<script id="frag" type="fragment-shader">
+precision mediump float;
+
+varying vec2 v_texCoord;
+
+uniform sampler2D u_image;
+
+uniform float u_kernel[9];
+uniform float u_kernelWeight;
+uniform  vec2 u_textureSize;
+
+void main(){
+	vec2 onePixel = vec2(1.0,1.0) / u_textureSize;
+	vec4 colorSum = 
+		texture2D(u_image,v_texCoord + onePixel*vec2(-1,-1)) * u_kernel[0]+
+		texture2D(u_image,v_texCoord + onePixel*vec2( 0,-1)) * u_kernel[1]+
+		texture2D(u_image,v_texCoord + onePixel*vec2( 1,-1)) * u_kernel[2]+
+		texture2D(u_image,v_texCoord + onePixel*vec2(-1, 0)) * u_kernel[3]+
+		texture2D(u_image,v_texCoord + onePixel*vec2( 0, 0)) * u_kernel[4]+
+		texture2D(u_image,v_texCoord + onePixel*vec2( 1, 0)) * u_kernel[5]+
+		texture2D(u_image,v_texCoord + onePixel*vec2(-1, 1)) * u_kernel[6]+
+		texture2D(u_image,v_texCoord + onePixel*vec2( 0, 1)) * u_kernel[7]+
+		texture2D(u_image,v_texCoord + onePixel*vec2( 1, 1)) * u_kernel[8];
+
+	gl_FragColor = vec4((colorSum/u_kernelWeight).rgb,1.0);
+	//texture2D(image ,coord) 返回纹理图片在坐标coord处的rgba
+}
+</script>
+<script type="text/javascript" src="./webGLutils.js"></script>
+<script type="text/javascript">
+let image = new Image();
+image.onload=function(){
+	let canvas = document.getElementsByTagName("canvas")[0];
+	canvas.width=600;
+	canvas.height=400;
+	let gl = canvas.getContext("webgl");
+
+	let program = webglUtils.createProgramById(gl,"vert","frag");
+
+	gl.useProgram(program);
+
+	let positionAttrLocation = gl.getAttribLocation(program , "a_position");
+	let resolutionUnifLocation = gl.getUniformLocation(program ,"u_resolution");
+	let imageUnifLocation = gl.getUniformLocation(program ,"u_image");
+	let textureSizeUnifLocation = gl.getUniformLocation(program,"u_textureSize");
+	let kernelUnifLocation = gl.getUniformLocation(program,"u_kernel[0]");
+	let kernelWeightUnifLocation = gl.getUniformLocation(program , "u_kernelWeight");
+
+	let positionBuffer = gl.createBuffer();
+	gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+
+	gl.uniform2f(resolutionUnifLocation , gl.canvas.width , gl.canvas.height);
+	gl.enableVertexAttribArray(positionAttrLocation);
+	gl.vertexAttribPointer(positionAttrLocation , 2, gl.FLOAT, false, 0, 0);
+	gl.uniform1i(imageUnifLocation,0);
+	//创建纹理
+	let originTexture = webglUtils.createAndSetupTexture(gl);
+	gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,image);
+
+	let textures = [];
+	let framebuffers = [];
+	for(let i=0;i<2;i++){
+		let texture = webglUtils.createAndSetupTexture(gl);
+		textures.push(texture);
+		gl.texImage2D(gl.TEXTURE_2D , 0 , gl.RGBA , image.width , image.height,0,
+										   gl.RGBA , gl.UNSIGNED_BYTE , null);
+
+		let fbo = gl.createFramebuffer();
+		framebuffers.push(fbo);
+		gl.bindFramebuffer(gl.FRAMEBUFFER , fbo);
+
+		gl.framebufferTexture2D(gl.FRAMEBUFFER , gl.COLOR_ATTACHMENT0 ,gl.TEXTURE_2D , texture ,0);
+	}
+
+	let kernels = {
+		edgeDetect : [
+			-1, -1 ,-1,
+			-1,	 8 ,-1,
+			-1, -1 ,-1
+		],
+		normal:[
+			0,0,0,
+			0,1,0,
+			0,0,0
+		],
+		unsharpen:[
+			-1,-1,-1,
+			-1,9,-1,
+			-1,-1,-1
+		],
+		gaussianBlur:[
+			0.045,0.122,0.045,
+			0.122,0.332,0.122,
+			0.045,0.122,0.045
+		]
+	};
+	
+	kerneLNames = [ 
+					'edgeDetect' ,
+					'normal' ,
+					'unsharpen' ,
+					'gaussianBlur'
+	];
+	function computeKernelWeight(kernel){
+		let weight = kernel.reduce(function(perv , curr){
+			return perv+curr;
+		});
+
+		return weight <=0 ? 1:weight;
+	}
+
+	
+	gl.uniform2f(textureSizeUnifLocation, image.width,image.height);
+	gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([
+		0,0,
+		0,gl.canvas.height,
+		gl.canvas.width,0,
+		gl.canvas.width,0,
+		0,gl.canvas.height,
+		gl.canvas.width,gl.canvas.height,
+		]),gl.STATIC_DRAW);
+	
+	/*
+		*framebuffer 的 viewport
+		*大小应是纹理的大小
+		*/
+	gl.viewport(0,0,image.width , image.height);
+
+	gl.bindTexture(gl.TEXTURE_2D , originTexture);
+	for(let i=kerneLNames.length-1;i>=0;i--){
+		gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffers[i%2] );
+		gl.uniform1f(kernelWeightUnifLocation ,computeKernelWeight(kernels[kerneLNames[i]]));
+		gl.uniform1fv(kernelUnifLocation , kernels[kerneLNames[i]]);
+
+		
+
+		gl.drawArrays(gl.TRIANGLES,0,6);
+
+		gl.bindTexture(gl.TEXTURE_2D , textures[i%2]);
+
+	}
+	gl.viewport(0,0,gl.canvas.width,gl.canvas.height);
+		
+	gl.bindFramebuffer(gl.FRAMEBUFFER , null);
+	gl.uniform1f(kernelWeightUnifLocation ,computeKernelWeight(kernels['normal']));
+	gl.uniform1fv(kernelUnifLocation , kernels['normal']);
+
+	gl.drawArrays(gl.TRIANGLES,0,6);
+
+	gl.drawArrays(gl.TRIANGLES,0,6);
+};
+image.src="./bg.jpg";
+</script>
+</body>
+</html>
