@@ -10,7 +10,7 @@ uniform sampler2D u_textureBg;
 varying vec2 v_texCoord;
 uniform vec2 u_resolution;
 uniform vec2 u_parallax;
-uniform float u_parallaxFg;
+uniform float u_parallaxFg;//单边像素数
 uniform float u_parallaxBg;
 uniform float u_textureRatio;
 uniform bool u_renderShine;
@@ -22,6 +22,7 @@ uniform float u_alphaMultiply;
 uniform float u_alphaSubtract;
 
 // alpha-blends two colors
+//blend 混合
 vec4 blend(vec4 bg,vec4 fg){
   vec3 bgm=bg.rgb*bg.a;
   vec3 fgm=fg.rgb*fg.a;
@@ -40,15 +41,19 @@ vec2 pixel(){
   return vec2(1.0,1.0)/u_resolution;
 }
 
+//parallax 视差
 vec2 parallax(float v){
   return u_parallax*pixel()*v;
+  //移动因子（-1~1）*单像素大小*单边像素数
 }
 
+//y轴翻转
 vec2 texCoord(){
   return vec2(gl_FragCoord.x, u_resolution.y-gl_FragCoord.y)/u_resolution;
 }
 
 // scales the bg up and proportionally to fill the container
+//不破坏原比例的缩放
 vec2 scaledTexCoord(){
   float ratio=u_resolution.x/u_resolution.y;
   vec2 scale=vec2(1.0,1.0);
@@ -86,16 +91,21 @@ vec4 fgColor(float x, float y){
 void main() {
   vec4 bg=texture2D(u_textureBg,scaledTexCoord()+parallax(u_parallaxBg));
 
+  //雨滴map上坐标
   vec4 cur = fgColor(0.0,0.0);
 
   float d=cur.b; // "thickness"
   float x=cur.g;
   float y=cur.r;
 
+  //增强对比,制造黏糊糊效果
   float a=clamp(cur.a*u_alphaMultiply-u_alphaSubtract, 0.0,1.0);
 
+  //剪裁坐标系
   vec2 refraction = (vec2(x,y)-0.5)*2.0;
   vec2 refractionParallax=parallax(u_parallaxBg-u_parallaxFg);
+  //水滴中的景色是背景相应位置的左右minRefraction~maxRefraction范围
+  //根据鼠标的位置再加上景深变化
   vec2 refractionPos = scaledTexCoord()
     + (pixel()*refraction*(u_minRefraction+(d*u_refractionDelta)))
     + refractionParallax;

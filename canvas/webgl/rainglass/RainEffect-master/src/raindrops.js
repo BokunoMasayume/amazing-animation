@@ -32,14 +32,18 @@ const defaultOptions={
   globalTimeScale:1,
   trailRate:1,
   autoShrink:true,
-  spawnArea:[-0.1,0.95],
+  spawnArea:[-0.1,0.95],//spawn 产卵
   trailScaleRange:[0.2,0.5],
-  collisionRadius:0.65,
+  collisionRadius:0.65,//碰撞半径
   collisionRadiusIncrease:0.01,
   dropFallMultiplier:1,
   collisionBoostMultiplier:0.05,
   collisionBoost:1,
 }
+/*
+*droplet 小雨滴，静态
+*drop 大雨滴，动态
+*/
 
 function Raindrops(width,height,scale,dropAlpha,dropColor,options={}){
   this.width=width;
@@ -58,14 +62,14 @@ Raindrops.prototype={
   width:0,
   height:0,
   scale:0,
-  dropletsPixelDensity:1,
+  dropletsPixelDensity:1,//density 密度
   droplets:null,
   dropletsCtx:null,
   dropletsCounter:0,
   drops:null,
   dropsGfx:null,
   clearDropletsGfx:null,
-  textureCleaningIterations:0,
+  textureCleaningIterations:0,//iteration 循环
   lastRender:null,
 
   options:null,
@@ -88,10 +92,10 @@ Raindrops.prototype={
     return this.options.maxR-this.options.minR;
   },
   get area(){
-    return (this.width*this.height)/this.scale;
+    return (this.width*this.height)/this.scale;//物理像素数
   },
   get areaMultiplier(){
-    return Math.sqrt(this.area/(1024*768));
+    return Math.sqrt(this.area/(1024*768));//你这一亩三分物理像素和1024*768差几倍？原效果按1024*768做的
   },
   drawDroplet(x,y,r){
     this.drawDrop(this.dropletsCtx,Object.assign(Object.create(Drop),{
@@ -112,19 +116,19 @@ Raindrops.prototype={
         dropBufferCtx.clearRect(0,0,dropSize,dropSize);
 
         // color
-        dropBufferCtx.globalCompositeOperation="source-over";
+        dropBufferCtx.globalCompositeOperation="source-over";//默认方式
         dropBufferCtx.drawImage(this.dropColor,0,0,dropSize,dropSize);
 
         // blue overlay, for depth
-        dropBufferCtx.globalCompositeOperation="screen";
+        dropBufferCtx.globalCompositeOperation="screen";//不同叠加后变亮
         dropBufferCtx.fillStyle="rgba(0,0,"+i+",1)";
         dropBufferCtx.fillRect(0,0,dropSize,dropSize);
 
         // alpha
-        dropCtx.globalCompositeOperation="source-over";
+        dropCtx.globalCompositeOperation="source-over";//默认
         dropCtx.drawImage(this.dropAlpha,0,0,dropSize,dropSize);
 
-        dropCtx.globalCompositeOperation="source-in";
+        dropCtx.globalCompositeOperation="source-in";//只在原图形有颜色的位置绘制新图形，原图形不会显示
         dropCtx.drawImage(dropBuffer,0,0,dropSize,dropSize);
         return drop;
     });
@@ -152,7 +156,7 @@ Raindrops.prototype={
       d*=1/(((drop.spreadX+drop.spreadY)*0.5)+1);
 
       ctx.globalAlpha=1;
-      ctx.globalCompositeOperation="source-over";
+      ctx.globalCompositeOperation="source-over";//默认
 
       d=Math.floor(d*(this.dropsGfx.length-1));
       ctx.drawImage(
@@ -166,7 +170,7 @@ Raindrops.prototype={
   },
   clearDroplets(x,y,r=30){
     let ctx=this.dropletsCtx;
-    ctx.globalCompositeOperation="destination-out";
+    ctx.globalCompositeOperation="destination-out";//只在新图形没有颜色的位置显示原图形，新图形不会显示
     ctx.drawImage(
       this.clearDropletsGfx,
       (x-r)*this.dropletsPixelDensity*this.scale,
@@ -189,6 +193,10 @@ Raindrops.prototype={
     this.drops.push(drop);
     return true;
   },
+  /*
+  *options.rainLimit:最多下几滴雨
+  *options.rainChance:这滴雨下下来的几率
+  */
   updateRain(timeScale){
     let rainDrops=[];
     if(this.options.raining){
@@ -374,7 +382,7 @@ Raindrops.prototype={
     let now=Date.now();
     if(this.lastRender==null) this.lastRender=now;
     let deltaT=now-this.lastRender;
-    let timeScale=deltaT/((1/60)*1000);
+    let timeScale=deltaT/((1/60)*1000);//秒数*60
     if(timeScale>1.1) timeScale=1.1;
     timeScale*=this.options.globalTimeScale;
     this.lastRender=now;

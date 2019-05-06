@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>test</title>
+	<style type="text/css">
+	/*	div{
+			height:20px;
+			margin-bottom: 5px;
+			background: #f0f;
+			filter:blur(10px) contrast(4.4);
+		}*/
+	</style>
+</head>
+<body>
+<canvas></canvas>
+<script id="vert" type="vertexShader">
+	attribute vec2 a_position;
+
+	void main(){
+		gl_Position = vec4(a_position , 0. ,1.);
+
+	}
+</script>
+<script id="frag" type="fragmentShader">
+	precision mediump float;
+
+	uniform sampler2D u_waterMap;
+	uniform sampler2D u_textureBg;
+	uniform sampler2D u_textureFg;
+
+	uniform vec2 u_resolution;
+	uniform float u_minRefraction;
+	uniform float u_maxRefraction;
+	uniform float u_alphaMultiply;
+	uniform float u_alphaSubtract;
+
+	vec4 blend(vec4 fg,vec4 bg){
+		vec3 bgm = bg.rgb * bg.a;
+		vec3 fgm = fg.rgb * fg.a;
+
+		float ia = 1. - fg.a;
+		float a = fg.a + bg.a*ia;
+
+		vec3 rgb ;
+		if(a!=0.){
+			rgb = (fgm+ bgm*ia) / a;
+		}else{
+			rgb = vec3(0.,0.,0.);
+		}
+		return vec4(rgb,a);
+	}
+
+	vec2 pixel(){
+		return vec2(1.,1.) / u_resolution;
+	}
+
+	vec2 texCoord(){
+		return vec2(gl_FragCoord.x , u_resolution.y - gl_FragCoord.y) / u_resolution;
+	}
+
+	void main(){
+		vec4 bg = texture2D(u_textureBg , texCoord());
+
+		vec4 wm = texture2D(u_waterMap , texCoord());
+
+		float d = wm.b;
+		float x = wm.r;
+		float y = wm.g;
+
+		float a = clamp(wm.a * u_alphaMultiply - u_alphaSubtract , 0. , 1.);
+
+		vec2 refractionScale = (vec2(x,y)-0.5)*2.;
+		vec2 refractPos = texCoord() + refractionScale * (u_minRefraction +(d*(u_maxRefraction - u_minRefraction )))*pixel();
+
+		vec4 fg = texture2D(u_textureFg , refractPos);
+
+		gl_FragColor = blend(vec4(fg.rgb,a) ,bg);
+
+	}
+</script>
+<script type="text/javascript" src="../../webGLutils.js"></script>
+<script type="text/javascript">
+
+	let canvas = document.getElementsByTagName("canvas")[0];
+	canvas.width = window.innerWidth;
+	canvas.height = window.innerHeight;
+	let gl = canvas.getContext("webgl");
+
+	let program = webglUtils.createProgramById(gl,"vert","frag");
+
+	gl.useProgram(program);
+	webglUtils.setUniform(gl,program , "2f","resolution",gl.canvas.width,gl.canvas.height);
+	webglUtils.setUniform(gl,program ,"1f","minRefraction",256);
+	webglUtils.setUniform(gl,program ,"1f","maxRefraction",512);
+	webglUtils.setUniform(gl,program ,"1f","alphaSubtract",3);
+	webglUtils.setUniform(gl,program ,"1f","alphaMultiply",20);
+
+	webglUtils.setUniform(gl,program ,"1i","textureBg",1);
+	webglUtils.setUniform(gl,program ,"1i","textureFg",2);
+
+
+	let images = [
+		{
+			name:"textureBg",
+			src:"./img/weather/texture-fallout-bg.png"
+		},
+		{
+			name:"textureFg",
+			src:"./img/weather/texture-fallout-fg.png"
+		},
+		{
+			name:"dropAlpha",
+			src:"./img/drop-alpha.png"
+		},
+		{
+			name:"dropColor",
+			src:"./img/drop-color.png"
+		}
+	];
+
+	let waterMap ={};
+	waterMap.canvas= document.createElement("canvas");
+	waterMap.canvas.width = gl.canvas.width;
+	waterMap.canvas.height = gl.canvas.height;
+	waterMap.ctx = waterMap.canvas.getContext("2d");
+
+	let positionBuffer = gl.createBuffer();
+	let positionAttrLocation = gl.getAttribLocation(program,"a_position");
+	gl.bindBuffer(gl.ARRAY_BUFFER ,positionBuffer);
+	gl.enableVertexAttribArray(positionAttrLocation);
+	gl.vertexAttribPointer(positionAttrLocation , 2, gl.FLOAT, false, 0, 0);
+
+	gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([
+			-1,-1,
+			1,-1,
+			1,1,
+			1,1,
+			-1,1,
+			-1,-1,
+		]),gl.STATIC_DRAW);
+
+	webglUtils.loadImageList(images).then((imageList)=>{
+		webglUtils.createAndSetupTexture(gl,null,0);
+		webglUtils.createAndSetupTexture(gl,imageList["textureBg"].img,1);
+		webglUtils.createAndSetupTexture(gl,imageList["textureFg"].img,2);
+
+		let drop = document.createElement("canvas");
+		drop.width = 128;
+		drop.height=128;
+		let dropCtx = drop.getContext("2d");
+		dropCtx.globalCompositeOperation = "source-over";
+		dropCtx.drawImage(imageList["dropColor"].img , 0,0);
+
+		dropCtx.globalCompositeOperation = "screen";
+		dropCtx.fillStyle = "rgba(0,0,128,1)";
+		dropCtx.fillRect(0,0,drop.width,drop.height);
+
+		dropCtx.globalCompositeOperation = "destination-in";
+		dropCtx.drawImage(imageList["dropAlpha"].img,0,0);
+
+		waterMap.ctx.drawImage(drop,0,0,drop.width,drop.height, 100,100,30,30);
+		waterMap.ctx.drawImage(drop,0,0,drop.width,drop.height, 200,100,30,30);
+		waterMap.ctx.drawImage(drop,0,0,drop.width,drop.height, 600,300,30,30);
+		waterMap.ctx.drawImage(drop,0,0,drop.width,drop.height, 185,100,30,30);
+		waterMap.ctx.drawImage(drop,0,0,drop.width,drop.height, 700,200,10,10);
+		waterMap.ctx.drawImage(drop,0,0,drop.width,drop.height, 650,200,20,20);
+		waterMap.ctx.drawImage(drop,0,0,drop.width,drop.height, 189,100,30,30);
+		waterMap.ctx.drawImage(drop,0,0,drop.width,drop.height, 189,190,100,100);
+		waterMap.ctx.drawImage(drop,0,0,drop.width,drop.height, 200,200,200,200);
+
+		webglUtils.updateTexture(gl,waterMap.canvas , 0);
+
+		gl.drawArrays(gl.TRIANGLES,0,6);
+	});
+
+</script>
+</body>
+</html>

@@ -79,10 +79,12 @@
 		precision mediump float;
 
 		uniform vec4 u_color;
+		//varying vec2 v_coord;
 		void main(){
 			
 
 			gl_FragColor = u_color;
+			//gl_FragColor = vec4(v_coord,0.5,1);
 		}
 	</script>
 	<script type="text/javascript">
@@ -92,7 +94,7 @@
 		*/
 		"use strict";
 		let canvas = document.getElementsByTagName("canvas")[0];
-		let gl = canvas.getContext("webgl");
+		let gl = canvas.getContext("webgl",{preserveDrawingBuffer:true});
 		if(!gl){
 			document.body.innerHTML="不支持webgl";
 		}

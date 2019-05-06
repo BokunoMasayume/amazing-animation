@@ -1,4 +1,4 @@
-import 'core-js';
+//import 'core-js';
 import RainRenderer from "./rain-renderer";
 import Raindrops from "./raindrops";
 import loadImages from "./image-loader";
@@ -84,7 +84,7 @@ loadTextures();
 function init(){
   canvas=document.querySelector('#container');
 
-  let dpi=window.devicePixelRatio;
+  let dpi=window.devicePixelRatio;//css像素 比 物理像素 的值
   canvas.width=window.innerWidth*dpi;
   canvas.height=window.innerHeight*dpi;
   canvas.style.width=window.innerWidth+"px";

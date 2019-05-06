@@ -40,8 +40,10 @@
 
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 		    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-		    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-		    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+		    // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+		    // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+		    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+		    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 
 
 		    if(img!=null){
@@ -49,6 +51,10 @@
 		    }
 
 		    return texture;
+		},
+		updateTexture(gl,img,i){
+			gl.activeTexture(gl["TEXTURE"+i]);
+			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
 		},
 
 		mat3 :{
@@ -163,6 +169,32 @@
 			multiply(a,b){
 				
 			}
+		},
+		setUniform(gl,program,type,name,...args){
+			let unilocal = gl.getUniformLocation(program , "u_"+name);
+			gl["uniform"+type](unilocal,...args);
+		},
+		loadImageList(imgList){
+			return new Promise((resolve,reject)=>{
+				Promise.all(imgList.map((imgobj)=>{
+					return new Promise((resolve,reject)=>{
+						imgobj.img=new Image();
+						imgobj.img.addEventListener("load",(event)=>{
+							resolve(imgobj);
+						});
+						imgobj.img.src = imgobj.src;
+					});
+				})).then((backList)=>{
+					let r={};//list to object
+					backList.forEach((theImg)=>{
+						r[theImg.name]={
+							src : theImg.src,
+							img : theImg.img
+						};
+					});
+					resolve(r);
+				});
+			});
 		}
 	}
 })();
