@@ -30,7 +30,7 @@ float noise(vec2 st){
 vec2 g_random(vec2 ip){
 	return fract(sin(
 		vec2(dot(ip,vec2(127.1,311.7)), dot(ip,vec2(269.5,183.3)))
-	)* 44753.976967);
+	)* 44753.976967) *2. - 1.;
 }
 
 float g_noise(vec2 st){
@@ -41,7 +41,7 @@ float g_noise(vec2 st){
 	vec2 u = fp*fp*fp*(fp*(fp*6.-15.)+10.);
 	return mix(
 		mix(dot(g_random(ip) , fp-vec2(0.,0.)) , dot(g_random(ip+vec2(1.,0.)) , fp-vec2(1.,0.)) ,u.x),
-		mix(dot(g_random(ip+vec2(0.,1.)) , fp-vec2(1.,0.)) , dot(g_random(ip+vec2(1.,1.)) ,fp-vec2(1.,1.)) , u.x),
+		mix(dot(g_random(ip+vec2(0.,1.)) , fp-vec2(0.,1.)) , dot(g_random(ip+vec2(1.,1.)) ,fp-vec2(1.,1.)) , u.x),
 		u.y
 	);
 }
@@ -59,12 +59,19 @@ void main(){
 	vec2 st = gl_FragCoord.xy / u_resolution;
 	//st.x *= u_resolution.x / u_resolution.y;
 
+	vec2 copy = st;
 	st *= vec2(3.,1.);
 	
+	//copy *= vec2(40.,12.);
+	//copy*=(u_mouse+1.)*u_time;
+	copy *= vec2(40.,2.4);
 	float color = rect(st);
-	color += (g_noise(st*65.)-.5)*.19;
 
-	gl_FragColor = vec4(vec3(1.)*step(.7,color), 1.);
+	copy += g_noise(copy*20.);
+
+	color += (g_noise(copy)-.5)*.19;
+
+	//gl_FragColor = vec4(vec3(1.)*step(.7,color), 1.);
 	gl_FragColor = vec4(mix(vec3(.8,0.,0.),vec3(.2,.1,0.03)+(g_noise(st*90.)-.5)*.06 , smoothstep(.65,.7,color)) ,1.);
 	
 

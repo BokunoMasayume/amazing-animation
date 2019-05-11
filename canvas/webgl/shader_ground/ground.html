@@ -40,6 +40,28 @@ void mainImage( out vec4 c, vec2 w )
         //z 上下移单位
     }
 } -->
+
+
+
+<!-- 
+#define F +texture(iChannel0,eye.xz+p.xz*s/3000.)*(s*=.5)
+
+void mainImage( out vec4 c, vec2 w )
+{
+    vec4 p=vec4(w/iResolution.xy,1,1)-.5,d=p,t;
+    p.z += iTime*20.;d.y-=.0;d.z +=.0;
+    vec4 eye = vec4(.0,0.7,0.,0.);
+    d -= eye;
+    for(float i=1.4;i>0.;i-=.002)
+    {
+        float s=.5;
+        t = F F F F F F F;
+        c =1.-smoothstep(.0,.072,i*t)+p.x*.0006; c.z-=.1;
+        if(t.x<-.0004*(p.y+eye.y))break;
+        p += d;
+    }
+}
+ -->
 <canvas></canvas>
 <script type="vertxShader" id="vert">
 	attribute vec2 a_position;

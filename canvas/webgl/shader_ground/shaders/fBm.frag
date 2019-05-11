@@ -25,67 +25,42 @@ float g_noise(vec2 st){
 	);
 }
 
-#define OCTAVES 5
-
+#define OCTAVES 10
 float fbm(vec2 st){
-	float fre = 1.;
-	float amp = 1.;
+	float value =.0;
+	float amplitude = .5;
+	float frequency = 2.;
+    
+    st +=1000.;
 
-	float value = 0.;
-
-	st *= .05;
-
+    //begin :for cloud moving
+	vec2 shift = vec2(100.);
+	mat2 rot = mat2(cos(.5+u_time*.000009),sin(.5+u_time*.00001), - sin(.5+u_time*.00001),cos(.5+u_time*.000008));
+	//end
+	
 	for(int i=0;i<OCTAVES;i++){
-		value += amp * g_noise(st* fre) ;
-		fre *= 2.;
-		amp *= .5;
+		value += amplitude * g_noise(st*frequency + shift);
+
+		amplitude *=.5;
+
+		frequency *= 2.;
+		st = rot * st;
 	}
-
-	return value;	
-}
-
-float sdf(vec3 st){
-	float l = fbm(st.xz);
-	return l+st.y*.002;
+	return value;
 }
 
 
-//ray marching
 void main(){
-	vec3 st = vec3(gl_FragCoord.xy / u_resolution, 1.);
+	vec2 st = gl_FragCoord.xy / u_resolution;
 	//st.x *= u_resolution.x / u_resolution.y;
-	vec3 d = st-.5;
-	//vec3 eye =d + vec3(u_mouse*.5,0.);
-	vec3 eye = d+ vec3(0.,-.5,0.);
 
-	st.z = u_time * .2;
+	st *= 3.;
+	//st+=u_time*.2;
 
+	float fb = fbm(st+vec2(u_time*.02,u_time*.011));
 
-	for(float i=1.5;i>.0;i -=.01){
-
-		float color = fbm(st.xz) * 1.3;
-
-		float depth = 1.- color + st.y*.03;
-		gl_FragColor = vec4(vec3( 1.- smoothstep(.00,.7,color  ) ),1.);
-
-
-		if(depth <0.0)
-		{
-
-			break;
-		}
-//		else{
-//			gl_FragColor = vec4(1.);
-//		}
-
-
-		st += normalize(eye)*depth;
-
-	}
-
-	
-
-	
+	vec3 color = mix(vec3(0.,204./255.,1.)+g_noise(st*2.)*.08 , vec3(1.),smoothstep(.02,.17,fb));
+	gl_FragColor = vec4(color, 1.);
 
 }
 
