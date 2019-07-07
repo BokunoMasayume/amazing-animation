@@ -44,48 +44,42 @@ float fbm(vec2 st){
 	return value;	
 }
 
-float sdf(vec3 st){
-	float l = fbm(st.xz);
-	return l+st.y*.002;
+//sphere
+float sdf(vec3 st , float r){
+	
+	return length(st) - r;
 }
 
 
 //ray marching
 void main(){
-	vec3 st = vec3(gl_FragCoord.xy / u_resolution, 1.);
+	vec3 st = vec3(gl_FragCoord.xy / u_resolution, .5);
 	//st.x *= u_resolution.x / u_resolution.y;
-	vec3 d = st-.5;
-	//vec3 eye =d + vec3(u_mouse*.5,0.);
-	vec3 eye = d+ vec3(0.,-.5,0.);
-
-	st.z = u_time * .2;
 
 
-	for(float i=1.5;i>.0;i -=.01){
+	st = st*2. - 1.;
+	vec3 eye = vec3(0.,0.,0.);
+	vec3 d = st - eye;
 
-		float color = fbm(st.xz) * 1.3;
+	float r = .4;
 
-		float depth = 1.- color + st.y*.03;
-		gl_FragColor = vec4(vec3( 1.- smoothstep(.00,.7,color  ) ),1.);
-
-
-		if(depth <0.0)
-		{
-
+	for(int i=0 ;i<100;i++){
+		float l = sdf(st , r);
+		gl_FragColor = vec4( vec3(1.) , 1.);
+		if(l < 0.){
+			gl_FragColor = vec4( vec3(1.,0.,0.) , 1.);
 			break;
 		}
-//		else{
-//			gl_FragColor = vec4(1.);
-//		}
 
-
-		st += normalize(eye)*depth;
-
+		st += normalize(d)*l;
 	}
 
-	
-
-	
 
 }
+
+	
+
+	
+
+
 

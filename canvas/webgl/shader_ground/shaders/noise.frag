@@ -55,18 +55,23 @@ float rect(vec2 st){
 	return cos(floor(.5 +angle /perAng)*perAng - angle)*len;
 }
 
+float circle(vec2 st){
+	return distance(fract(st) , vec2(.5))*(1. / u_time * 10.);
+}
+
 void main(){
 	vec2 st = gl_FragCoord.xy / u_resolution;
 	//st.x *= u_resolution.x / u_resolution.y;
 
 	vec2 copy = st;
-	st *= vec2(3.,1.);
+	//st *= vec2(3.,1.);
 	
 	//copy *= vec2(40.,12.);
 	//copy*=(u_mouse+1.)*u_time;
 	copy *= vec2(40.,2.4);
-	float color = rect(st);
-
+	
+	//float color = rect(st);
+	float color = circle(st);
 	copy += g_noise(copy*20.);
 
 	color += (g_noise(copy)-.5)*.19;

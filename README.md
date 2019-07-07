@@ -4,7 +4,8 @@
 
 - 2d
   - 布料效果[js插件](./canvas/2d/cloth/cloth.js)  [demo](./canvas/2d/cloth/view.html)
-- 3d
+- webgl
+  - shader_groud   一些练习的fragment shader
 
 
 

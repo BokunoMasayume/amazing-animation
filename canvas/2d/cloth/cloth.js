@@ -32,7 +32,13 @@
 	window.Cloth = function(obj){
 		this.img = obj.img;
 		this.renderType = obj.renderType || 0;
+
+		let filltype = this.filltype = obj.filltype||"picture";//"color"纯色；"picture"图片
+
+		let fillcolor = this.fillcolor = obj.fillcolor||"#000";
+
 		let doGrain = this.doGrain = obj.doGrain||false;
+		console.log("doGrain" , this.doGrain);
 		let canvas = this.canvas = obj.canvas;
 		let ctx = this.ctx = obj.ctx || obj.canvas.getContext('2d');
 		let numrow = this.numrow = obj.numrow || 30 ;
@@ -113,7 +119,7 @@
 			this.x = x;
 			this.y = y;
 			this.perv_x = x;
-			this.perv_y = y;
+			this.perv_y = y*.99;
 			this.pin_x = null;
 			this.pin_y = null;
 			//acceleration 加速度
@@ -267,8 +273,76 @@
 
 	window.Cloth.prototype.draw = function(){
     	this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    	if(this.filltype=="color"){
+    		// this.ctx.save();
+
+    		for(let y=1;y<=this.numrow;y++){
+				for(let x=1;x<=this.numcol;x++){
+					// this.points[y][x].drawGrain();
+					let p1 = this.points[y-1][x-1];
+					let p2 = this.points[y-1][x];
+					let p3 = this.points[y][x-1];
+					let p4 = this.points[y][x];
+						// console.log(p4.constraints[0].pa.constraints);
+
+					if(p4.constraints.length<2)continue;
+					if(!(p4.constraints[0].pa.constraints.length && p4.constraints[1].pa.constraints.length))continue;
+					if(p4.constraints[0].pa.constraints[p4.constraints[0].pa.constraints.length-1].pa == p4.constraints[1].pa.constraints[0].pa){
+						
+						this.ctx.beginPath();
+    					this.ctx.fillStyle = this.fillcolor;
+						this.ctx.moveTo(p1.x , p1.y);
+						this.ctx.lineTo(p2.x , p2.y);
+						this.ctx.lineTo(p4.x , p4.y);
+						this.ctx.lineTo(p3.x , p3.y);
+
+						this.ctx.fill();
+					}
+				}
+			}//for y numrow
+			// this.ctx.restore();
+    	}
+    	if(this.filltype=="glass"){
+    		this.ctx.save();
+
+    		let tempCanvas = document.createElement("canvas");
+    		tempCanvas.width = this.canvas.width;
+    		tempCanvas.height = this.canvas.height;
+    		let tempCtx = tempCanvas.getContext("2d");
+
+    		for(let y=1;y<=this.numrow;y++){
+				for(let x=1;x<=this.numcol;x++){
+					// this.points[y][x].drawGrain();
+					let p1 = this.points[y-1][x-1];
+					let p2 = this.points[y-1][x];
+					let p3 = this.points[y][x-1];
+					let p4 = this.points[y][x];
+						// console.log(p4.constraints[0].pa.constraints);
+
+					if(p4.constraints.length<2)continue;
+					if(!(p4.constraints[0].pa.constraints.length && p4.constraints[1].pa.constraints.length))continue;
+					if(p4.constraints[0].pa.constraints[p4.constraints[0].pa.constraints.length-1].pa == p4.constraints[1].pa.constraints[0].pa){
+						
+						tempCtx.beginPath();
+    					tempCtx.fillStyle = this.fillcolor;
+						tempCtx.moveTo(p1.x , p1.y);
+						tempCtx.lineTo(p2.x , p2.y);
+						tempCtx.lineTo(p4.x , p4.y);
+						tempCtx.lineTo(p3.x , p3.y);
+
+						tempCtx.fill();
+					}
+				}
+			}//for y numrow
+			this.ctx.drawImage(tempCanvas ,0,0,this.canvas.width , this.canvas.height);
+			this.ctx.globalCompositeOperation = "source-in";
+    		this.ctx.drawImage(this.img , 0 , 0 , this.canvas.width , this.canvas.height);
+			this.ctx.restore();
+    	}
     	if(!this.doGrain){
 			this.ctx.beginPath();
+			this.ctx.lineWidth = this.space*.1;
+			this.ctx.strokecolor="#ff0";
 			for(let y=0 ; y<=this.numrow;y++){
 				for(let x = 0 ; x<=this.numcol ; x++){
 					this.points[y][x].draw();
@@ -276,9 +350,9 @@
 			}
 			this.ctx.stroke();
 		}
-		if(this.doGrain){
-			let imgWidth = this.img.width/this.numcol;
-			let imgHeight = this.img.height/this.numrow;
+		if(this.doGrain && this.filltype!="color" && this.filltype!="glass"){
+			// let imgWidth = this.img.width/this.numcol;
+			// let imgHeight = this.img.height/this.numrow;
 			for(let y=1;y<=this.numrow;y++){
 				for(let x=1;x<=this.numcol;x++){
 					// this.points[y][x].drawGrain();
@@ -294,17 +368,23 @@
 						this.ctx.save();
 						this.ctx.setTransform(p2.x-p1.x , p2.y-p1.y ,p3.x-p1.x, p3.y-p1.y ,p1.x,p1.y);
 						// this.ctx.putImageData(p1.grain,p1.x,p1.y);
-						if(this.renderType ==1){
+						
+						//worst way to fill pure color 
+						if(this.filltype=="color"){
+							this.ctx.fillRect(0,0,this.pand.x,this.pand.y);
+						}
+						
+						else if(this.renderType ==1){
 
 							// this.ctx.drawImage(this.img , p1.x,p1.y,this.space,this.space,0,0,this.pand.x,this.pand.y  );
 							// this.ctx.setTransform(p2.x-p3.x , p2.y-p3.y ,p4.x-p3.x , p4.y-p3.y,p3.x,p3.y);
 							// this.ctx.drawImage(this.transImg[x%2],this.numrow*this.space - p3.y , p3.x+p3.y,this.space,this.space,0,0,1,1);
 							this.ctx.drawImage(this.img , p1.x,p1.y,this.space,this.space,0,0,this.pand.x,this.pand.y );
 							this.ctx.setTransform(p2.x-p3.x , p2.y-p3.y ,p4.x-p3.x , p4.y-p3.y,p3.x,p3.y);
-							this.ctx.drawImage(this.img,this.numrow*this.space - p3.y*this.space , p3.x*this.space+p3.y*this.space,this.space,this.space,0,0,this.pand.x,this.pand.y );
+							this.ctx.drawImage(this.img,this.numrow*this.space - p3.y*this.space , p3.x*this.space+p3.y*this.space,this.space*2,this.space*2,0,0,this.pand.x,this.pand.y );
 						
 						}
-						if(this.renderType ==0){
+						else if(this.renderType ==0){
 
 							// this.ctx.drawImage(this.transImg[x%2?1:0] , (x-1)*imgWidth,(y-1)*imgHeight,imgWidth,imgHeight,0,0,1.07,1.07 );
 							this.ctx.drawImage(this.halfImg[(x+y)%2?0:1] , (x-1)*this.space,(y-1)*this.space,this.space,this.space,0,0,this.pand.x,this.pand.y );

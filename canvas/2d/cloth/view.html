@@ -45,27 +45,30 @@
 	let cl;
 	myimg.onload = function(){
 	let canv = document.getElementsByTagName("canvas")[0];
-	canv.width = 800;
-    canv.height = 600;
+	canv.width = window.innerWidth;
+    canv.height = window.innerHeight;
 	cl = new Cloth({
 		canvas:canv,
-		gravity:{x:20,y:300},
-		start:{x:30,y:40},
-		numcol:30,
-		numrow:30,
+		gravity:{x:0,y:500},
+		start:{x:0,y:0},
+		numcol:54,
+		numrow:23,
 		render_times:2,
-		tear_distance:180,
-		space:10,
-		renderType:0,
+		tear_distance:300,
+		space:25,
+		renderType:2,
 		pand:{
-			x:1.002,
-			y:1.002
+			x:1.02,
+			y:1.02
 		},
-		mouse_influence:50
+		mouse_influence:50,
+		filltype:"glass",
+		doGrain:true
 	});
 	cl.init();
 	cl.bindEvent();
 	cl.renderGrain(myimg);
+
 	// cl.points[cl.numrow][cl.numcol].pin();
 	// cl.points[cl.numrow][0].pin();
 	// cl.points[cl.numrow][10].pin();
@@ -78,15 +81,18 @@
 		requestAnimationFrame(anim);
 	}
 		requestAnimationFrame(anim);
+
+		// cl.update();
+		// cl.draw();
 		// anim();
 		// anim();
 		// anim();
 		// anim();
 	}
-	myimg.src = "./t.jpg";
-	setInterval(function(){
-		cl.gravity.x -= (Math.random()-0.5)*10;
-	} , 1000);
+	myimg.src = "./bg3.jpg";
+	// setInterval(function(){
+	// 	cl.gravity.x -= (Math.random()-0.5)*10;
+	// } , 1000);
 </script>
 </body>
 </html>
