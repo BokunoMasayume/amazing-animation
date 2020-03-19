@@ -1,22 +1,28 @@
 # 一些有趣的web动画效果
 
-**canvas**
+## canvas
 
-- 2d
-  - 布料效果[js插件](./canvas/2d/cloth/cloth.js)  [demo](./canvas/2d/cloth/view.html)
+- 2d  
 - webgl
   - shader_groud   一些练习的fragment shader
 
+> mountain.frag
+![](./static/mountain.png)
 
+>simple_sdf_fbm_raymarching.frag
+![](./static/mountain2.png)
 
-**css**
+>fBm.frag
+![](./static/sky.png)
 
-- [渐变边框](./css/渐变边框.html)
+>domain_warping.frag
+![](./static/blackflame.png)
 
+>cellular_noise.frag
+![](./static/cells.png)
 
+## css
 
-
-
-**辅助**
+## 辅助
 
 - [避免跨域，简易服务器](./server.js)
